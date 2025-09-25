@@ -56,9 +56,11 @@ class _CostumTextFormState extends State<CostumTextForm> {
                 width: 1,
               ),
             ),
+           
             child: TextFormField(
               key: widget.key,
               onChanged: widget.onChange,
+              controller: widget.controller,
               validator: (data) {
                 if (data == null || data.isEmpty) {
                   setState(() {
@@ -114,6 +116,7 @@ class _CostumTextFormState extends State<CostumTextForm> {
                 ),
               ],
             ),
+        
         ],
       ),
     );
