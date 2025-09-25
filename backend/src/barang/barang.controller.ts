@@ -1,10 +1,26 @@
-import { BadRequestException, Controller, Get, Post, Query,Body, Put } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Body,
+  Put,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { BarangService } from './barang.service';
 import {
   PaginationFindDto,
   PaginationFindSchema,
 } from 'src/common/dto/pagination.dto';
-import { BarangDto, barangSchemaValidaton } from 'src/common/dto/barang.dto';
+import {
+  BarangDto,
+  barangSchemaValidaton,
+  DeleteBarangDto,
+  deleteBarangSchemaValidaton,
+  updateBarangSchemaValidaton,
+} from 'src/common/dto/barang.dto';
 
 @Controller('barang')
 export class BarangController {
@@ -35,21 +51,32 @@ export class BarangController {
     return this.barangService.createBarang(parsedBody);
   }
   @Put(':id')
-  updateBarang(@Body() data: BarangDto, @Query('id') id: number) {
-    
-    const parseBodyValidation = barangSchemaValidaton.safeParse(data);
+  updateBarang(@Body() data: BarangDto, @Param('id') id: string) {
+    const parseBodyValidation = updateBarangSchemaValidaton.safeParse(data);
     if (!parseBodyValidation.success) {
       throw new BadRequestException(parseBodyValidation.error);
     }
+
     const parsedBody = parseBodyValidation.data;
-    return this.barangService.updateBarang(id, parsedBody);
+    
+    return this.barangService.updateBarang(parseInt(id), parsedBody);
   }
   @Get(':id')
-  findBarang(@Query('id') id: number) {
-    return this.barangService.findBarang(id);
+  findBarang(@Param('id') id: string) {
+    return this.barangService.findBarang(parseInt(id));
   }
-  @Get('delete/:id')
-  deleteBarang(@Query('id') id: number) {
-    return this.barangService.deleteBarang(id);
+  @Delete(':id/delete')
+  deleteBarang(@Param('id') id: string) {
+    return this.barangService.deleteBarang(parseInt(id));
+  }
+
+  @Delete('delete-all')
+  deleteAllBarang(@Body() data: DeleteBarangDto) {
+    const parsedBody = deleteBarangSchemaValidaton.safeParse(data);
+    if (!parsedBody.success) {
+      throw new BadRequestException(parsedBody.error);
+    }
+    const parsedData = parsedBody.data;
+    return this.barangService.deleteAllBarang(parsedData.id);
   }
 }

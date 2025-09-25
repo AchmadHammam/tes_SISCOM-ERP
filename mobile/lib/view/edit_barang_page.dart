@@ -3,30 +3,28 @@ import 'package:get/get.dart';
 import 'package:mobile/component/dropdown.dart';
 import 'package:mobile/component/text_input.dart';
 import 'package:mobile/controller/barang_controller.dart';
+import 'package:mobile/helper/format.dart';
+import 'package:mobile/model/barang.dart';
 import 'package:mobile/view/home_page.dart';
 
-class AddBarangPage extends StatefulWidget {
-  const AddBarangPage({super.key});
+class EditBarangPage extends StatefulWidget {
+  final Barang data;
+  const EditBarangPage({super.key, required this.data});
 
   @override
-  State<AddBarangPage> createState() => _AddBarangPageState();
+  State<EditBarangPage> createState() => _EditBarangPageState();
 }
 
-class _AddBarangPageState extends State<AddBarangPage> {
+class _EditBarangPageState extends State<EditBarangPage> {
   final _formKey = GlobalKey<FormState>();
   final BarangController barangController = BarangController();
-  
-
   @override
   void initState() {
-    
+    barangController.namaBarangTextController.text = widget.data.nama!;
+    barangController.hargaTextController.setNumericValue(widget.data.harga ?? 0);
+    barangController.stokTextController.text = widget.data.stok.toString();
+    barangController.selectedKategori(widget.data.kategori!.id!);
     super.initState();
-  }
-
-  @override
-  void dispose() {
-    barangController.dispose();
-    super.dispose();
   }
 
   @override
@@ -41,7 +39,7 @@ class _AddBarangPageState extends State<AddBarangPage> {
             () => ElevatedButton(
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
-                  barangController.createBarang();
+                  barangController.updateBarang(widget.data.id!);
                   Get.to(() => const HomePage());
                 }
               },
@@ -62,7 +60,7 @@ class _AddBarangPageState extends State<AddBarangPage> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 1,
-        title: Text('Tambah Barang', style: TextTheme.of(context).titleMedium),
+        title: Text('Edit Barang', style: TextTheme.of(context).titleMedium),
       ),
       body: SingleChildScrollView(
         child: SafeArea(
@@ -80,8 +78,8 @@ class _AddBarangPageState extends State<AddBarangPage> {
                   formKey: _formKey,
                   onChange: (value) => barangController.isValid.value = _formKey.currentState?.validate() ?? false,
                 ),
-                CostumAsyncDropdown(barangController: barangController),
-                CostumDropdown(barangController: barangController),
+                CostumAsyncDropdown(barangController: barangController, initalValue: widget.data.kategori),
+                CostumDropdown(barangController: barangController, initalValue: widget.data.kelompokBarang),
                 CostumTextForm(
                   title: 'Stok Barang*',
                   hintText: 'Masukkan stok barang',
@@ -96,8 +94,8 @@ class _AddBarangPageState extends State<AddBarangPage> {
                   hintText: 'Masukkan harga barang',
                   errorText: 'Harga barang harus diisi',
                   controller: barangController.hargaTextController,
-                  isHarga: true,
                   keyboardType: TextInputType.number,
+                  isHarga: true,
                   formKey: _formKey,
                   onChange: (value) => barangController.isValid.value = _formKey.currentState?.validate() ?? false,
                 ),
@@ -108,6 +106,4 @@ class _AddBarangPageState extends State<AddBarangPage> {
       ),
     );
   }
-
-
 }

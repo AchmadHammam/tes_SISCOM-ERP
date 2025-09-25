@@ -14,9 +14,9 @@ class BarangController extends GetxController {
   var totalStok = 0.obs;
   var isValid = false.obs;
   var selectedKategori = 0.obs;
+  var kelompokBarang = ''.obs;
 
   TextEditingController namaBarangTextController = TextEditingController();
-  TextEditingController kelompokTextController = TextEditingController();
   TextEditingController hargaTextController = TextEditingController();
   TextEditingController stokTextController = TextEditingController();
 
@@ -29,7 +29,6 @@ class BarangController extends GetxController {
   @override
   void onClose() {
     namaBarangTextController.dispose();
-    kelompokTextController.dispose();
     hargaTextController.dispose();
     stokTextController.dispose();
     super.onClose();
@@ -80,8 +79,79 @@ class BarangController extends GetxController {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'nama': namaBarangTextController.text,
-          'kelompok_barang': kelompokTextController.text,
-          'harga': int.parse(hargaTextController.text),
+          'kelompok_barang': kelompokBarang.value,
+          'harga': int.parse(hargaTextController.text.numericOnly()),
+          'stok': int.parse(stokTextController.text),
+          'kategori_id': selectedKategori.value,
+        }),
+      );
+      if (response.statusCode == 200) {
+        return true;
+      }
+      return false;
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<Barang?>? getDetailBarang(int id) async {
+    try {
+      isLoading(true);
+      var url = Uri.parse('${APIService.baseUrl}/barang/$id');
+      var response = await http.get(url);
+      if (response.statusCode == 200) {
+        Map<String, dynamic> map = jsonDecode(response.body);
+        var data = Barang.fromJson(map);
+        return data;
+      }
+      return null;
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<bool> deleteDetail(int id) async {
+    try {
+      isLoading(true);
+      var url = Uri.parse('${APIService.baseUrl}/barang/$id/delete');
+      print(url);
+      var response = await http.delete(url);
+      print(response.statusCode);
+      if (response.statusCode == 200) {
+        return true;
+      }
+      return false;
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<bool> deleteAll(List<int> id) async {
+    try {
+      isLoading(true);
+      var url = Uri.parse('${APIService.baseUrl}/barang/delete-all');
+      var response = await http.delete(url, headers: {'Content-Type': 'application/json'}, body: jsonEncode({'id': id}));
+      if (response.statusCode == 200) {
+        return true;
+      }
+      return false;
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<bool> updateBarang(int id) async {
+    try {
+      isLoading(true);
+      var url = Uri.parse('${APIService.baseUrl}/barang/$id');
+      var response = await http.put(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'nama': namaBarangTextController.text,
+          'kelompok_barang': kelompokBarang.value,
+          'harga': int.parse(hargaTextController.text.numericOnly()),
+
           'stok': int.parse(stokTextController.text),
           'kategori_id': selectedKategori.value,
         }),

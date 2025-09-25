@@ -3,17 +3,30 @@ import 'package:flutter/material.dart';
 import 'package:mobile/controller/barang_controller.dart';
 import 'package:mobile/model/kategori_barang.dart';
 
-class CostumDropdown extends StatefulWidget {
-  const CostumDropdown({super.key, required this.barangController});
-
+class CostumAsyncDropdown extends StatefulWidget {
   final BarangController barangController;
+  final Kategori? initalValue;
+  const CostumAsyncDropdown({super.key, required this.barangController, this.initalValue});
 
   @override
-  State<CostumDropdown> createState() => _CostumDropdownState();
+  State<CostumAsyncDropdown> createState() => _CostumAsyncDropdownState();
 }
 
-class _CostumDropdownState extends State<CostumDropdown> {
+class _CostumAsyncDropdownState extends State<CostumAsyncDropdown> {
   bool isValid = true;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initalValue != null) {
+      widget.barangController.selectedKategori.value = widget.initalValue!.id ?? 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -32,6 +45,7 @@ class _CostumDropdownState extends State<CostumDropdown> {
               border: Border.all(color: isValid ? Color.fromRGBO(216, 220, 224, 1) : Colors.red, width: 1),
             ),
             child: DropdownSearch<Kategori>(
+              selectedItem: widget.initalValue,
               dropdownButtonProps: DropdownButtonProps(alignment: AlignmentGeometry.center),
               dropdownDecoratorProps: DropDownDecoratorProps(
                 dropdownSearchDecoration: InputDecoration(
@@ -73,27 +87,113 @@ class _CostumDropdownState extends State<CostumDropdown> {
               children: [
                 Padding(
                   padding: EdgeInsets.only(right: 4),
-                  child: Icon(
-                    Icons.error,
-                    size: 12,
-                    color: Colors.red,
-                  ),
+                  child: Icon(Icons.error, size: 12, color: Colors.red),
                 ),
                 Text(
                   'Kategori barang harus diisi',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w400,
-                        fontSize: 12,
-                        color: Colors.red,
-                      ),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w400, fontSize: 12, color: Colors.red),
                 ),
               ],
             ),
-        
         ],
       ),
     );
   }
 }
 
+class CostumDropdown extends StatefulWidget {
+  final BarangController barangController;
+  final String? initalValue;
+  const CostumDropdown({super.key, required this.barangController, this.initalValue});
 
+  @override
+  State<CostumDropdown> createState() => _CostumDropdownState();
+}
+
+class _CostumDropdownState extends State<CostumDropdown> {
+  List<String> list = ['Kelompok 1', 'Kelompok 2', 'Kelompok 3'];
+  bool isValid = true;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initalValue != null) {
+      widget.barangController.kelompokBarang.value = widget.initalValue!;
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.02),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Kelompok Barang*',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500, fontSize: 14, color: Color.fromRGBO(32, 35, 39, 1)),
+          ),
+          Container(
+            padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.005),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: isValid ? Color.fromRGBO(216, 220, 224, 1) : Colors.red, width: 1),
+            ),
+            child: DropdownSearch<String>(
+              selectedItem: widget.initalValue,
+              dropdownButtonProps: DropdownButtonProps(alignment: AlignmentGeometry.center),
+              dropdownDecoratorProps: DropDownDecoratorProps(
+                dropdownSearchDecoration: InputDecoration(
+                  hintText: 'Masukkan kelompok barang',
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.04),
+                ),
+                baseStyle: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w400, fontSize: 14, color: Color.fromRGBO(32, 35, 39, 1)),
+                textAlign: TextAlign.start,
+                textAlignVertical: TextAlignVertical(y: .05),
+              ),
+              items: list,
+              onChanged: (value) {
+                print(widget.barangController.kelompokBarang.value);
+                widget.barangController.kelompokBarang.value = value ?? '-';
+              },
+              itemAsString: (item) {
+                return item;
+              },
+              validator: (value) {
+                if (value == null) {
+                  setState(() {
+                    isValid = false;
+                  });
+                  return '';
+                } else {
+                  setState(() {
+                    isValid = true;
+                  });
+                  return null;
+                }
+              },
+            ),
+          ),
+          if (!isValid)
+            Row(
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(right: 4),
+                  child: Icon(Icons.error, size: 12, color: Colors.red),
+                ),
+                Text(
+                  'Kelompok barang harus diisi',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w400, fontSize: 12, color: Colors.red),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}

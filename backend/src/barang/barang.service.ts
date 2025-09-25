@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { barangType } from 'src/common/dto/barang.dto';
+import { barangType, updateBarangType } from 'src/common/dto/barang.dto';
 
 @Injectable()
 export class BarangService {
@@ -23,6 +23,9 @@ export class BarangService {
           },
         },
         kelompokBarang: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
       skip: skip,
       take: limit,
@@ -58,20 +61,22 @@ export class BarangService {
     const barang = await this.prisma.barang.create({
       data: {
         nama: data.nama,
-        harga: data.harga,  
+        harga: data.harga,
         stok: data.stok,
-        kategoriId: data.kategori_id ,  
-        kelompokBarang: data.kelompok_barang,  
+        kategoriId: data.kategori_id,
+        kelompokBarang: data.kelompok_barang,
         createdBy: 'system',
         updatedBy: 'system',
       },
     });
     return barang;
   }
-  async updateBarang(id: number, data: barangType) {
+  async updateBarang(id: number, data: updateBarangType) {
+    console.log(id);
     const barang = await this.prisma.barang.findUnique({
       where: { id: id },
     });
+    
     if (!barang) {
       throw new Error('Barang tidak ditemukan');
     }
@@ -91,6 +96,9 @@ export class BarangService {
   async findBarang(id: number) {
     const barang = await this.prisma.barang.findUnique({
       where: { id: id },
+      include: {
+        kategori: true,
+      },
     });
     if (!barang) {
       throw new Error('Barang tidak ditemukan');
@@ -106,6 +114,26 @@ export class BarangService {
     }
     const deletedBarang = await this.prisma.barang.delete({
       where: { id: id },
+    });
+    return deletedBarang;
+  }
+  async deleteAllBarang(id: number[]) {
+    const check = await this.prisma.barang.findMany({
+      where: {
+        id: {
+          in: id,
+        },
+      },
+    });
+    if (!check) {
+      throw new Error('Barang tidak ditemukan');
+    }
+    const deletedBarang = await this.prisma.barang.deleteMany({
+      where: {
+        id: {
+          in: id,
+        },
+      },
     });
     return deletedBarang;
   }

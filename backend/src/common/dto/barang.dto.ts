@@ -12,11 +12,17 @@ export const barangSchemaValidaton = z.object({
 });
 
 export const updateBarangSchemaValidaton = barangSchemaValidaton.partial();
+export const deleteBarangSchemaValidaton = z.object({
+  id: z.number().array().min(1),
+});
 
 export type updateBarangType = z.infer<typeof updateBarangSchemaValidaton>;
 export class UpdateBarangDto extends createZodDto(
   updateBarangSchemaValidaton,
 ) {}
+
+export type deleteBarangType = z.infer<typeof deleteBarangSchemaValidaton>;
+export class DeleteBarangDto extends createZodDto(deleteBarangSchemaValidaton) {}
 
 export type barangType = z.infer<typeof barangSchemaValidaton>;
 export class BarangDto extends createZodDto(barangSchemaValidaton) {}

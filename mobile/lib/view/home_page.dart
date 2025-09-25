@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:mobile/component/modal.dart';
 import 'package:mobile/controller/barang_controller.dart';
 import 'package:mobile/helper/format.dart';
 import 'package:mobile/model/barang.dart';
+import 'package:mobile/service/constant.dart';
 import 'package:mobile/view/add_barang_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -13,14 +15,24 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with RouteAware {
   final BarangController barangController = BarangController();
   late final PagingController<int, Barang>? pagingController;
+  bool isEditAble = false;
+  List<bool> isCheckoutBool = [];
+  List<int> selectedId = [];
 
   @override
   void initState() {
     super.initState();
-    pagingController = PagingController(getNextPageKey: (state) => state.lastPageIsEmpty ? null : state.nextIntPageKey, fetchPage: (pageKey) => barangController.fetchBarang(pageKey, 10));
+    pagingController = PagingController(
+      getNextPageKey: (state) => state.lastPageIsEmpty ? null : state.nextIntPageKey,
+      fetchPage: (pageKey) async {
+        var data = await barangController.fetchBarang(pageKey, 10);
+        isCheckoutBool.addAll(List.generate(data.length, (_) => false));
+        return data;
+      },
+    );
   }
 
   @override
@@ -31,15 +43,32 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void didPopNext() {
+    pagingController?.refresh(); // refresh pagination
+  }
+
+  @override
+  void didPushNext() {
+    pagingController?.refresh(); // refresh pagination
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Get.to(() => const AddBarangPage()),
-        backgroundColor: Color.fromRGBO(0, 23, 103, 1),
-        child: Icon(Icons.add, size: 24, color: Colors.white),
-      ),
+      floatingActionButton: !isEditAble
+          ? FloatingActionButton(
+              onPressed: () => Get.to(() => const AddBarangPage()),
+              backgroundColor: Color.fromRGBO(0, 23, 103, 1),
+              child: Icon(Icons.add, size: 24, color: Colors.white),
+            )
+          : SizedBox.shrink(),
       appBar: AppBar(
         shadowColor: Colors.black,
         backgroundColor: Colors.white,
@@ -102,12 +131,12 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Obx(() => Text('${barangController.total} Data ditampilkan', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic))),
                   InkWell(
+                    onTap: () => setState(() => isEditAble = !isEditAble),
                     child: Text('Edit Data', style: TextStyle(color: Colors.blue)),
                   ),
                 ],
               ),
             ),
-
             Expanded(
               child: Padding(
                 padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.02),
@@ -116,8 +145,6 @@ class _HomePageState extends State<HomePage> {
                   child: PagingListener(
                     controller: pagingController!,
                     builder: (context, state, fetchNextPage) => PagedListView<int, Barang>(
-                      physics: BouncingScrollPhysics(),
-                      shrinkWrap: true,
                       state: state,
                       fetchNextPage: fetchNextPage,
                       builderDelegate: PagedChildBuilderDelegate(
@@ -152,7 +179,26 @@ class _HomePageState extends State<HomePage> {
                             ],
                           ),
                           child: ListTile(
+                            onTap: () {
+                              showModalDetailBarang(context, item.id!, barangController);
+                            },
                             contentPadding: EdgeInsets.zero,
+                            leading: isEditAble
+                                ? Checkbox(
+                                    value: isCheckoutBool[index],
+                                    onChanged: (v) {
+                                      setState(() {
+                                        isCheckoutBool[index] = v!;
+                                        if (selectedId.contains(item.id)) {
+                                          selectedId.remove(item.id);
+                                        } else {
+                                          selectedId.add(item.id!);
+                                        }
+                                      });
+                                      print(selectedId);
+                                    },
+                                  )
+                                : null,
                             title: Text(item.nama ?? '', style: Theme.of(context).textTheme.titleMedium),
                             subtitle: Text('Stok: ${item.stok}', style: Theme.of(context).textTheme.bodySmall),
                             trailing: Text(
@@ -167,6 +213,58 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
+
+            if (isEditAble)
+              Container(
+                padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.01),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: isCheckoutBool.every((e) => e == true),
+                          onChanged: (v) {
+                            final allSelected = isCheckoutBool.every((e) => e == true);
+                            for (int i = 0; i < isCheckoutBool.length; i++) {
+                              isCheckoutBool[i] = !allSelected;
+                              if (allSelected) {
+                                selectedId.clear();
+                              } else {
+                                selectedId.add(pagingController!.items![i].id!);
+                              }
+                            }
+                            setState(() {});
+                          },
+                        ),
+                        Text('Pilih Semua', style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                    ),
+                    Container(
+                      // width: MediaQuery.of(context).size.width * 0.25,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey, width: 1),
+                        color: Colors.white,
+                      ),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, elevation: 0),
+                        onPressed: () {
+                          barangController.deleteAll(selectedId);
+                          selectedId.clear();
+                          isCheckoutBool.clear();
+                          pagingController?.refresh();
+                          Get.back();
+                        },
+                        child: Text(
+                          'Hapus Data',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.red),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
